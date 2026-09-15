@@ -70,7 +70,7 @@ export const FINANCE_PERSPECTIVE_APPS: readonly MenuApp[] = [
     key: "expense",
     name: "Expense Claims",
     icon: ReceiptTextIcon,
-    purpose: "File a new expense claim, or track the ones already submitted.",
+    purpose: "File an expense claim, track the ones you submitted, and decide on the ones waiting on you.",
     items: [
       // New Claim is held behind a preview flag: Me → Claims already offers a
       // new-claim flow, and showing a second entry point under Finance before
@@ -93,6 +93,24 @@ export const FINANCE_PERSPECTIVE_APPS: readonly MenuApp[] = [
           ]
         : []),
       { id: "expense-history", label: "Claim History", desc: "Claims you have submitted, and where each one has got to.", path: expenseFinancePaths.history },
+      // Approving sits beside filing, where the source app's own sidebar keeps
+      // it — and in its order, lead before finance, which is the order a claim
+      // travels. Each entry stands on its own backend flag, so somebody holding
+      // both sees both and somebody holding neither sees neither.
+      {
+        id: "expense-lead-approvals",
+        label: "Lead Approvals",
+        desc: "Expense claims from the people you lead, waiting on your decision.",
+        requires: ["lead", "admin"],
+        path: expenseFinancePaths.leadApprovals,
+      },
+      {
+        id: "expense-finance-approvals",
+        label: "Finance Approvals",
+        desc: "Expense claims that passed their lead and are waiting on finance.",
+        requires: ["lead", "admin"],
+        path: expenseFinancePaths.financeApprovals,
+      },
     ],
   },
   {
