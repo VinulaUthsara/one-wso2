@@ -818,19 +818,6 @@ export function isIsacConfigured(): boolean {
   return Boolean(isacUrl);
 }
 
-// CSM — a separate application this webapp does not host. Its launcher tile
-// opens it in a new tab rather than routing anywhere, which is why it needs no
-// route of its own and never appears as a landing choice or a favourite: there
-// is nothing here to land on.
-//
-// Empty string = not configured, and the tile then stays in its unbuilt state
-// rather than becoming a link to nowhere.
-export const csmUrl: string = window.config?.ONE_WSO2_CSM_URL ?? "";
-
-export function isCsmConfigured(): boolean {
-  return Boolean(csmUrl);
-}
-
 export const promotionServiceUrls = {
   // GET /employee-info?employeeWorkEmail=<email> — returns the caller's
   // EmployeeInfoWithLead (startDate, jobBand, lastPromotedDate, reportingLead,
@@ -914,3 +901,111 @@ export const subscriptionServiceUrls = {
   unsubscribeMeal: (email: string) =>
     `${subscriptionBackendUrl}/meal/${encodeURIComponent(email)}/unsubscribe`,
 };
+
+// ---- CSM Portal backend -----------------------------------------------------
+//
+// The CSM Portal (wso2-open-operations/cs-tools/apps/csm-portal) is a Go BFF in
+// front of an internal entity service, same Choreo Bearer -> x-jwt-assertion
+// gateway rewrite pattern as every other ported backend above. Internal-CSM-only
+// — see docs/ported-apps/csm-cases.md.
+//
+// This is the API base URL for the CSM perspective this webapp renders
+// itself — there is no separate "legacy portal" link anymore; the waffle
+// tile and the SideRail cross-link both route to the native `/csm`.
+//
+// GET /users/me resolves the caller's own platform user id — needed for the
+// case-comment ownership check (never compare against a raw JWT claim; see
+// useCsmMe) — and doubles as the perspective's access gate: the Cases API has no
+// role-based access control today (any authenticated caller may call every case
+// route), so "the call succeeds" is the whole gate. Empty string = not
+// configured; CsmShell renders a "not connected" state rather than firing
+// broken requests.
+export const csmBackendUrl: string = (window.config?.ONE_WSO2_CSM_BACKEND_URL ?? "").replace(
+  /\/+$/,
+  "",
+);
+
+export function isCsmBackendConfigured(): boolean {
+  return Boolean(csmBackendUrl);
+}
+
+export const csmServiceUrls = {
+  me: `${csmBackendUrl}/users/me`,
+  cases: `${csmBackendUrl}/cases`,
+  case: (caseId: string) => `${csmBackendUrl}/cases/${encodeURIComponent(caseId)}`,
+  casesSearch: `${csmBackendUrl}/cases/search`,
+  caseComments: (caseId: string) => `${csmBackendUrl}/cases/${encodeURIComponent(caseId)}/comments`,
+  caseCommentsSearch: (caseId: string) =>
+    `${csmBackendUrl}/cases/${encodeURIComponent(caseId)}/comments/search`,
+  caseActivitiesSearch: (caseId: string) =>
+    `${csmBackendUrl}/cases/${encodeURIComponent(caseId)}/activities/search`,
+  caseEscalations: (caseId: string) => `${csmBackendUrl}/cases/${encodeURIComponent(caseId)}/escalations`,
+  caseTags: (caseId: string) => `${csmBackendUrl}/cases/${encodeURIComponent(caseId)}/tags`,
+  caseTag: (caseId: string, tagId: string) =>
+    `${csmBackendUrl}/cases/${encodeURIComponent(caseId)}/tags/${encodeURIComponent(tagId)}`,
+};
+
+// ---- CS vs. Sales/Solutions Architecture audience gate ---------------------
+//
+// The CSM entry point is shared: Customer Success sees the CSM Portal above,
+// Sales / Solutions Architecture sees the ported SupportPortalLite screens
+// below. Neither backend can tell the two apart — confirmed by reading
+// SupportPortalLite's own authJWT/userinfo modules, which parse the caller's
+// Asgardeo `groups` claim internally but never return it from any endpoint —
+// so the split is made client-side from the id_token's `groups` claim
+// (see useAsgardeoGroups) against these two configured name lists, the same
+// technique the subscription service's admin gate already uses. Placeholder
+// values below; replace with the real Asgardeo group names for each team.
+// See useCsmTeamGate.
+export function csTeamGroups(): string[] {
+  return window.config?.ONE_WSO2_CS_TEAM_GROUPS ?? [];
+}
+
+export function salesTeamGroups(): string[] {
+  return window.config?.ONE_WSO2_SALES_TEAM_GROUPS ?? [];
+}
+
+// ---- SupportPortalLite backend ----------------------------------------------
+//
+// SupportPortalLite (digiops-cs/apps/support-portal-lite) is a Ballerina BFF
+// in front of ServiceNow, an internal Employee GraphQL service, a risk MySQL
+// DB and Google Drive — same Choreo Bearer -> x-jwt-assertion gateway rewrite
+// pattern as every other ported backend on this page. Powers the Sales/
+// Solutions Architecture half of the shared CSM entry point (see
+// useCsmTeamGate, features/spl/**).
+//
+// Unlike the CSM Portal, this backend enforces its own group-based checks on
+// a handful of write actions (work notes, escalations, attachment downloads,
+// usage metrics) — see splAddWorknoteGroups and friends below, ported from
+// the source app's own Authorize.tsx. Those are independent of the
+// CS-vs-Sales/SA team split above: they gate WHAT a Sales/SA caller may do
+// inside this app, not WHETHER they see it.
+//
+// Empty string = not configured; every hook in features/spl/api falls back
+// to an in-memory mock (see splMockApi.ts), mirroring the CSM port's own
+// csmCasesMockData.ts so the ported screens are usable before a real backend
+// is wired up.
+export const splBackendUrl: string = (window.config?.ONE_WSO2_SPL_BACKEND_URL ?? "").replace(
+  /\/+$/,
+  "",
+);
+
+export function isSplBackendConfigured(): boolean {
+  return Boolean(splBackendUrl);
+}
+
+export function splAddWorknoteGroups(): string[] {
+  return window.config?.ONE_WSO2_SPL_ADD_WORKNOTE_GROUPS ?? [];
+}
+
+export function splAddEscalationGroups(): string[] {
+  return window.config?.ONE_WSO2_SPL_ADD_ESCALATION_GROUPS ?? [];
+}
+
+export function splDownloadAttachmentGroups(): string[] {
+  return window.config?.ONE_WSO2_SPL_DOWNLOAD_ATTACHMENT_GROUPS ?? [];
+}
+
+export function splUsageMetricsGroups(): string[] {
+  return window.config?.ONE_WSO2_SPL_USAGE_METRICS_GROUPS ?? [];
+}

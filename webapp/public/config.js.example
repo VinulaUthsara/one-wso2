@@ -90,12 +90,37 @@ window.config = {
   // rendered as a link that goes nowhere.
   // ONE_WSO2_MARKETINGOPS_ISAC_URL: "<your-isac-url>",
 
-  // CSM base URL — a separate application, reached from its launcher tile and
-  // opened in a new tab. Nothing here calls it as an API, and there is no route
-  // for it, so it is never a landing choice or a favourite. Optional — when
-  // absent, the tile stays in its unbuilt state rather than becoming a link
-  // that goes nowhere.
-  // ONE_WSO2_CSM_URL: "<your-csm-url>",
+  // CSM Portal backend base URL (wso2-open-operations/cs-tools/apps/csm-portal).
+  // Powers the native CSM perspective (Cases, and more as they're ported).
+  // Optional — when absent, the perspective shows a not-connected state.
+  // See docs/ported-apps/csm-cases.md for the contract.
+  // ONE_WSO2_CSM_BACKEND_URL: "<your-csm-portal-backend-url>",
+
+  // Asgardeo group names distinguishing the two audiences the shared CSM
+  // entry point serves: Customer Success sees the CSM Portal above; Sales /
+  // Solutions Architecture sees the ported SupportPortalLite screens below.
+  // Neither backend can tell the two apart, so the split is made client-side
+  // from the caller's own id_token groups claim — see useCsmTeamGate.
+  // Optional — when either list is empty, nobody resolves to that team.
+  // ONE_WSO2_CS_TEAM_GROUPS: ["wso2-customer-success"],
+  // ONE_WSO2_SALES_TEAM_GROUPS: ["wso2-sales", "wso2-solutions-architecture"],
+
+  // SupportPortalLite backend base URL (digiops-cs/apps/support-portal-lite).
+  // Powers the Sales/Solutions Architecture half of the shared CSM entry
+  // point. Optional — when absent, those screens fall back to mock data
+  // (see features/spl/api/splMockApi.ts).
+  // ONE_WSO2_SPL_BACKEND_URL: "<your-support-portal-lite-backend-url>",
+
+  // Fine-grained SupportPortalLite permission groups, ported verbatim from
+  // the source app's own group-list config — independent of the CS-vs-Sales/
+  // SA split above: these gate what a Sales/SA caller may DO inside the
+  // ported screens, not whether they see them. Optional; empty/absent means
+  // nobody in that group (so nobody may add work notes, escalate, download
+  // attachments, or view usage metrics until configured).
+  // ONE_WSO2_SPL_ADD_WORKNOTE_GROUPS: [],
+  // ONE_WSO2_SPL_ADD_ESCALATION_GROUPS: [],
+  // ONE_WSO2_SPL_DOWNLOAD_ATTACHMENT_GROUPS: [],
+  // ONE_WSO2_SPL_USAGE_METRICS_GROUPS: [],
 
   // Pardot UI base URL — for deep-linking to an email template after Email
   // Workbench pushes it. A link target, not an API. Optional; defaults to

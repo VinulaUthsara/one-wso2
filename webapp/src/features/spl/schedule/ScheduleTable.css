@@ -1,0 +1,80 @@
+/* Copyright (c) 2026 WSO2 LLC. (https://www.wso2.com). All Rights Reserved.
+
+Ported verbatim from SupportPortalLite's src/styles/ScheduleTable.css — see
+docs/ported-apps/spl.md. */
+
+.schedule-table-container {
+   margin-top: 20px;
+   max-height: auto;
+   overflow-x: auto;
+}
+
+.schedule-table-header th {
+   background-color: #0b4583;
+   color: white;
+   border-bottom: 1px solid rgba(229, 225, 225, 0.125);
+   min-width: 80px;
+   font-weight: bold;
+   font-size: 16px;
+   text-align: center;
+}
+
+.schedule-table-cell {
+   min-width: 150px;
+   text-align: center;
+   border: 1px solid rgb(235, 233, 233);
+}
+
+.schedule-form-control {
+   min-width: 120px;
+}
+
+.schedule-header-cell {
+   font-weight: bold;
+}
+
+.schedule-app-container {
+   padding: 20px;
+   background: white;
+}
+
+.schedule-sticky-column {
+   position: sticky;
+   left: 0;
+   z-index: 1;
+   border: 1px solid white;
+   background-color: #d4dee4;
+   min-width: 200px;
+}
+
+.schedule-team-cell {
+   font-size: 16px !important;
+   font-weight: bold !important;
+}
+
+.schedule-sticky-header {
+   position: sticky;
+   top: 0;
+   z-index: 2;
+   background-color: #ffffff;
+   border-bottom: 3x solid #ffffff;
+}
+
+/* Dark-mode overrides — this stylesheet predates dark mode (ported verbatim
+   from the source app, which never had one), so every rule above assumes a
+   permanently-light page. one-wso2's ColorSchemeToggle stamps
+   data-color-scheme on <html>; that's a plain DOM attribute (not a React
+   theme context), so it's the only signal a static CSS file can react to. */
+[data-color-scheme="dark"] .schedule-app-container {
+   background: #121212;
+}
+
+[data-color-scheme="dark"] .schedule-table-cell {
+   border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+[data-color-scheme="dark"] .schedule-sticky-column {
+   background-color: #22303a;
+   border: 1px solid rgba(255, 255, 255, 0.12);
+   color: #e6e6e6;
+}

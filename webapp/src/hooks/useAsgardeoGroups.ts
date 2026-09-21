@@ -17,6 +17,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAsgardeo } from "@asgardeo/react";
 import { useAsgardeoSub } from "@hooks/useAsgardeoSub";
+import { devBypassAuth, devBypassGroups } from "@config/authConfig";
 
 // The signed-in user's Asgardeo group memberships, read from the `groups`
 // claim of the id_token. The `groups` scope is already requested at sign-in
@@ -105,6 +106,17 @@ export function useAsgardeoGroups(): AsgardeoGroups {
     retryIdentity();
     void query.refetch();
   };
+
+  // Dev-only: AuthGuard's ONE_WSO2_DEV_BYPASS_AUTH skips signing in, so
+  // isSignedIn/userSub above never resolve and the query stays disabled
+  // forever — every caller of this hook would spin on "checking your
+  // access" with no way to reach the screen it's gating. Short-circuit with
+  // the configured ONE_WSO2_DEV_BYPASS_GROUPS instead; both constants fold
+  // away in a production build (see authConfig.ts), so this branch is
+  // physically absent from shipped code.
+  if (devBypassAuth) {
+    return { ready: true, groups: devBypassGroups, retry };
+  }
 
   // Checked first: with identity unresolved the query stays disabled forever,
   // so leaving it to `isPending` below would report "still loading" for a

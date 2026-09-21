@@ -16,15 +16,14 @@
 
 import { useMemo, useState, type JSX, type ReactNode } from "react";
 import { Box, Link, Sidebar, Typography } from "@wso2/oxygen-ui";
-import { ExternalLinkIcon, LifeBuoyIcon, SettingsIcon } from "@wso2/oxygen-ui-icons-react";
+import { ExternalLinkIcon, SettingsIcon } from "@wso2/oxygen-ui-icons-react";
 import { Link as RouterLink, matchPath, useLocation, useNavigate } from "react-router";
 import { useActivePerspective } from "@context/perspective/PerspectiveContext";
-import { SUBSCRIPTION_ITEM_IDS, type PerspectiveSection } from "@constants/perspectives";
+import { SPL_SECTIONS, SUBSCRIPTION_ITEM_IDS, type PerspectiveSection } from "@constants/perspectives";
 import { capabilitiesFromPrivileges, type Capability } from "@constants/appMenu";
 import { FINANCE_ITEM_IDS } from "@constants/financeApps";
 import { LEAVE_ITEM_IDS } from "@constants/meApps";
 import { DUE_DILIGENCE_ITEM_IDS } from "@constants/dueDiligenceApps";
-import { csmUrl, isCsmConfigured } from "@config/apiConfig";
 import { useUserInfo } from "@api/useUserInfo";
 import { useFinanceGate } from "@features/finance/api/useFinanceGate";
 import { useLeaveGate } from "@features/leave/api/useLeaveGate";
@@ -36,6 +35,7 @@ import { useMarketingOpsGate } from "@features/marketing-ops/api/useMarketingOps
 import { useDueDiligenceGate } from "@features/due-diligence/api/useDueDiligenceGate";
 import { useSubscriptionGate } from "@features/subscriptions/api/useSubscriptionGate";
 import { isSriLankaWorkLocation } from "@features/subscriptions/util/locationGate";
+import { useCsmTeamGate } from "@features/csm/api/useCsmTeamGate";
 
 // Context-sensitive left rail, built on Oxygen's compound `Sidebar`.
 //
@@ -66,14 +66,6 @@ const OVERVIEW_ID = "perspective-overview";
 /** Footer row, outside any perspective — it is a global page, not a section. */
 const SETTINGS_ID = "settings";
 const SETTINGS_PATH = "/settings";
-/**
- * Top-level row linking out to the CSM Portal — a separate application this
- * webapp does not host, so it opens in a new tab rather than routing. Reuses
- * the same `csmUrl`/`isCsmConfigured` gate as the waffle's CSM tile: omitted
- * entirely when unconfigured, same "no link to nowhere" contract as ISAC.
- */
-const CSM_PORTAL_ID = "csm-portal";
-
 // Left padding for a sub-item, so its label lines up with its parent's label
 // rather than with the parent's icon.
 //
@@ -159,6 +151,16 @@ export default function SideRail({ collapsed }: SideRailProps): JSX.Element {
   const isPeopleOps = active.key === "people";
   const subscriptionGate = useSubscriptionGate(isPeopleOps);
 
+  // CSM is now a shared entry point (see useCsmTeamGate) — Customer Success
+  // gets CSM_SECTIONS (the `csm` perspective's static `sections` default),
+  // Sales/Solutions Architecture gets SPL_SECTIONS. Same special-case shape
+  // as isMarketingOps/isPeopleOps: which section list is right depends on a
+  // role resolved at render time, not on anything baked into the static
+  // PERSPECTIVES array, so `sections` below can't just read
+  // `active.sections` for this one perspective.
+  const isCsm = active.key === "csm";
+  const csmTeamGate = useCsmTeamGate(isCsm);
+
   // Both services are a Colombo-office perk, so the section as a whole is
   // Sri-Lanka-only — see isSriLankaWorkLocation. `userInfo` is the SAME call
   // `caps` above already makes (people-app's /user-info), so this piggybacks
@@ -195,7 +197,10 @@ export default function SideRail({ collapsed }: SideRailProps): JSX.Element {
 
   // Memoised because `?? []` would otherwise hand a fresh array to the
   // dependency lists below on every render, defeating both useMemos.
-  const sections = useMemo(() => active.sections ?? [], [active.sections]);
+  const sections = useMemo(() => {
+    if (isCsm && csmTeamGate.team === "salesOrSa") return SPL_SECTIONS;
+    return active.sections ?? [];
+  }, [active.sections, isCsm, csmTeamGate.team]);
 
   // Manual open/close choices for groups the user has explicitly clicked.
   // These win: navigating into a group opens it, and closing it again is
@@ -341,17 +346,6 @@ export default function SideRail({ collapsed }: SideRailProps): JSX.Element {
                 <Sidebar.ItemLabel>Overview</Sidebar.ItemLabel>
               </Sidebar.Item>
             </RouteItem>
-          )}
-
-          {isCsmConfigured() && (
-            <Link href={csmUrl} target="_blank" rel="noopener noreferrer" color="inherit" underline="none">
-              <Sidebar.Item id={CSM_PORTAL_ID}>
-                <Sidebar.ItemIcon>
-                  <LifeBuoyIcon />
-                </Sidebar.ItemIcon>
-                <Sidebar.ItemLabel>CSM Portal</Sidebar.ItemLabel>
-              </Sidebar.Item>
-            </Link>
           )}
 
           {sections.map((s) => (
