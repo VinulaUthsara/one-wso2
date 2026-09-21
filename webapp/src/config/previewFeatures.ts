@@ -61,11 +61,35 @@ export type PreviewFeature =
    */
   | "expenseSubmitter"
   /**
+   * Finance → OPD Claims, the app's own front door under the Finance
+   * perspective. Only Claim History is migrated so far, and it has never run
+   * against the real OPD backend — the development account is refused by it —
+   * so the group is held back as a whole rather than screen by screen.
+   */
+  | "opdClaims"
+  /**
+   * Finance → Expense Claims, the whole app — New Claim, Claim History, and
+   * Lead/Finance Approvals. Held back from the Finance rail as a group rather
+   * than item by item: this is one section going away, not one route inside
+   * it becoming unavailable while the rest stays reachable.
+   */
+  | "expenseClaims"
+  /**
    * People Ops → Performance, par-app's Employee Portal ported in #61. Held back until
    * the Lead Portal, Admin Portal, Report Chain and F2F follow it over — see
    * docs/ported-apps/par-app.md §7.
    */
-  | "par";
+  | "par"
+  /**
+   * The whole UMT perspective — rail entry, launcher tile, landing-page
+   * option, favourites eligibility, and the `/umt` route. UMT is still being
+   * ported: only its dashboard exists so far (see perspectives.ts), and that
+   * is gated as a whole rather than screen-by-screen because the thing that
+   * needs to stay preview-only is the perspective's presence itself, not one
+   * route inside it. `useUmtGate`'s own role check against the UMT backend is
+   * unrelated and keeps working the same regardless of this flag.
+   */
+  | "umt";
 
 /**
  * Whether a preview feature should be shown.
