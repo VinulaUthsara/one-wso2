@@ -16,6 +16,7 @@
 
 import { useCallback } from "react";
 import { useAsgardeo } from "@asgardeo/react";
+import { devBypassAuth } from "@config/authConfig";
 
 // Collapses the two-line "fetch the access_token, then guard against an
 // empty one" boilerplate every authed query/mutation repeats before calling
@@ -23,9 +24,21 @@ import { useAsgardeo } from "@asgardeo/react";
 // the token from the Asgardeo hook (not @api/authBridge's registered
 // accessor) — see the comment on authedGet in @api/http for why the
 // primary fetch must stay hook-sourced rather than bridge-sourced.
+//
+// Dev-only exception: under ONE_WSO2_DEV_BYPASS_AUTH there is no real
+// Asgardeo session, so getAccessToken() has nothing to return and every
+// authed call would throw "No access_token available" before ever reaching
+// the network — the same problem useAsgardeoGroups had, for the hook nearly
+// every ported perspective's real-data fetching goes through. Returns a
+// placeholder instead; whatever backend receives it either ignores it (a
+// local dev proxy standing in for a gateway) or 401s it, same as any other
+// invalid token would — this never grants real access, it just lets the
+// request attempt happen instead of failing synchronously in the browser.
+// Folds away in production builds exactly like devBypassAuth itself.
 export function useAccessToken(): () => Promise<string> {
   const { getAccessToken } = useAsgardeo();
   return useCallback(async () => {
+    if (devBypassAuth) return "dev-bypass-no-real-token";
     const token = await getAccessToken();
     if (!token) throw new Error("No access_token available from Asgardeo");
     return token;

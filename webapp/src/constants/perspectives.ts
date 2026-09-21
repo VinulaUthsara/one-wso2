@@ -17,13 +17,24 @@
 // Central perspective registry. The waffle switcher and left rail both read
 // from this — one edit here changes every entry point.
 
-import { csmUrl, isCsmConfigured, isIsacConfigured, isacUrl } from "@config/apiConfig";
+import { isIsacConfigured, isacUrl } from "@config/apiConfig";
 import { isPreviewEnabled } from "@config/previewFeatures";
 import {
+  AlertOctagonIcon,
+  AlertTriangleIcon,
+  BarChart3Icon,
+  Building2Icon,
+  CalendarClockIcon,
   CheckCheckIcon,
   ClipboardCheckIcon,
+  ClipboardListIcon,
+  CogIcon,
   DatabaseIcon,
+  FolderKanbanIcon,
+  GitPullRequestIcon,
+  HeartPulseIcon,
   HouseIcon,
+  LayersIcon,
   LifeBuoyIcon,
   LayoutDashboard,
   MegaphoneIcon,
@@ -34,6 +45,7 @@ import {
   TicketIcon,
   UserRoundIcon,
   UserRoundMinusIcon,
+  UserSearchIcon,
   UsersIcon,
   UsersRoundIcon,
   WalletIcon,
@@ -317,6 +329,83 @@ const ME_SECTIONS: PerspectiveSection[] = [
   ...appsToSections(ME_FINANCE_APPS),
 ];
 
+// CSM's Operations section — ported 1:1 from cs-tools/apps/csm-portal's own
+// rail (see that app's src/config/csmNavItems.ts): same label, same icon,
+// same five children in the same order. Unlike Cases (the one CSM domain
+// with a real, working backend today — see docs/ported-apps/csm-cases.md),
+// none of these five has a ported page yet, so each one routes to the shared
+// CsmOperationsPlaceholderPage rather than a real domain screen. It's still a
+// real, working expand/collapse rail group — SectionNode's generic
+// children-rendering handles that the same way it does for every other
+// perspective's app groups (Leave, Menu, Finance, ...).
+export const CSM_SECTIONS: PerspectiveSection[] = [
+  {
+    id: "csm-operations",
+    label: "Operations",
+    icon: CogIcon,
+    children: [
+      {
+        id: "csm-operations-service-requests",
+        label: "Service requests",
+        icon: ClipboardListIcon,
+        path: "/csm/operations/service-requests",
+      },
+      {
+        id: "csm-operations-change-requests",
+        label: "Change requests",
+        icon: GitPullRequestIcon,
+        path: "/csm/operations/change-requests",
+      },
+      {
+        id: "csm-operations-incidents",
+        label: "Incidents",
+        icon: AlertTriangleIcon,
+        path: "/csm/operations/incidents",
+      },
+      {
+        id: "csm-operations-problem-management",
+        label: "Problem management",
+        icon: AlertOctagonIcon,
+        path: "/csm/operations/problem-management",
+      },
+      {
+        id: "csm-operations-outages",
+        label: "Outages",
+        icon: MegaphoneIcon,
+        path: "/csm/operations/outages",
+      },
+    ],
+  },
+];
+
+// SupportPortalLite's rail — the Sales/Solutions Architecture counterpart to
+// CSM_SECTIONS above, picked by SideRail at render time based on
+// useCsmTeamGate rather than being one perspective's static `sections`
+// (see the `csm` PerspectiveDef's own comment below). Ported from the source
+// app's own top-level nav (SideNavBar.tsx: Cases, Accounts, Projects, User
+// Scan, Customer Health, Usage Metrics, same order) with one addition — Team
+// Schedule wasn't a rail item there (reached only via in-page links, given
+// its optional :sysId param), but one-wso2's rail is the only navigation
+// surface here, so it gets a stop of its own rather than being unreachable
+// outside a project's detail page.
+export const SPL_SECTIONS: PerspectiveSection[] = [
+  { id: "spl-cases", label: "Cases", icon: LayersIcon, path: "/csm/support-cases" },
+  {
+    id: "spl-accounts",
+    label: "Accounts",
+    icon: Building2Icon,
+    children: [
+      { id: "spl-accounts-my", label: "My accounts", path: "/csm/my-accounts" },
+      { id: "spl-accounts-all", label: "All accounts", path: "/csm/all-accounts" },
+    ],
+  },
+  { id: "spl-projects", label: "Projects", icon: FolderKanbanIcon, path: "/csm/projects" },
+  { id: "spl-team-schedule", label: "Team schedule", icon: CalendarClockIcon, path: "/csm/team-schedule" },
+  { id: "spl-user-scan", label: "User scan", icon: UserSearchIcon, path: "/csm/user-scan" },
+  { id: "spl-customer-health", label: "Customer health", icon: HeartPulseIcon, path: "/csm/customer-health" },
+  { id: "spl-usage-metrics", label: "Usage metrics", icon: BarChart3Icon, path: "/csm/usage-metrics" },
+];
+
 export interface PerspectiveDef {
   key: string;
   label: string;
@@ -422,15 +511,39 @@ export const PERSPECTIVES: readonly PerspectiveDef[] = [
     forwardsToFirstItem: true,
     sections: [...appsToSections(DUE_DILIGENCE_APPS)],
   },
-  // A separate application, opened in a new tab. `access` follows the URL being
-  // configured: without one the tile stays in its unbuilt state rather than
-  // becoming a link to nowhere.
+  // CSM Portal — ported from wso2-open-operations/cs-tools/apps/csm-portal.
+  // Internal-CSM-only (unlike Customer Portal, which needs external-customer
+  // access too and so can't live in this internal-employee app at all — see
+  // docs/ported-apps/csm-cases.md).
+  //
+  // Cases (the one domain with a real backend) is still reached from the
+  // Overview page's own tile, not the rail — see CsmOverviewPage. Operations
+  // is the exception: it's ported onto the rail as its own expandable group,
+  // matching cs-tools/apps/csm-portal's own sidebar 1:1 (label, icon, and all
+  // five children) — see CSM_SECTIONS above.
+  //
+  // `externallyGated: true` for the same reason Marketing Ops/Legal carry it:
+  // `access: true` means "built", not "usable by whoever opens it" — see
+  // useCsmGate. Unlike those, there's no role to gate on (the Cases API has no
+  // RBAC at all today); the gate is just "GET /users/me succeeded".
+  //
+  // Shared entry point, as of the SupportPortalLite port: this one tile/path
+  // now serves two audiences (see useCsmTeamGate) — Customer Success gets
+  // CSM_SECTIONS below, Sales/Solutions Architecture gets SPL_SECTIONS
+  // (docs/ported-apps/spl.md). `sections` here stays CSM_SECTIONS as the
+  // static fallback for callers that read a perspective's sections without
+  // resolving a role first (e.g. reachablePerspectives) — SideRail is the
+  // one place that actually substitutes SPL_SECTIONS at render time, since
+  // it's the only rail-rendering consumer and already special-cases other
+  // perspectives (isMarketingOps, isPeopleOps) the same way.
   {
     key: "csm",
     label: "CSM",
     icon: LifeBuoyIcon,
-    access: isCsmConfigured(),
-    externalUrl: csmUrl || undefined,
+    externallyGated: true,
+    access: true,
+    path: "/csm",
+    sections: CSM_SECTIONS,
   },
   // Marketing Ops — UNLOCKED. Ported so far: Utilities (UTM + Asset Name
   // generators and their Marketing Admin panels) and Ad Campaigns → Analytics.

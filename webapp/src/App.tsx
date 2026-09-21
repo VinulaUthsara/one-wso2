@@ -16,6 +16,12 @@
 
 import { Suspense, lazy } from "react";
 import { Skeleton } from "@wso2/oxygen-ui";
+import {
+  AlertOctagonIcon,
+  ClipboardListIcon,
+  GitPullRequestIcon,
+  MegaphoneIcon,
+} from "@wso2/oxygen-ui-icons-react";
 import { Navigate, Route, Routes } from "react-router";
 import { landingPath } from "@config/landingConfig";
 import SettingsPage from "@features/settings/pages/SettingsPage";
@@ -50,6 +56,25 @@ import EmailGroupsPage from "@features/my/email-groups/pages/EmailGroupsPage";
 import EmailSignaturePage from "@features/my/email-signature/pages/EmailSignaturePage";
 import MyTeamPage from "@features/my/my-team/pages/MyTeamPage";
 import TeamMemberPage from "@features/my/my-team/pages/TeamMemberPage";
+import CsmOrSplLanding from "@features/csm/components/CsmOrSplLanding";
+import CsmCaseListPage from "@features/csm/cases/pages/CsmCaseListPage";
+import CsmCaseCreatePage from "@features/csm/cases/pages/CsmCaseCreatePage";
+import CsmCaseDetailPage from "@features/csm/cases/pages/CsmCaseDetailPage";
+import CsmOperationsPlaceholderPage from "@features/csm/operations/pages/CsmOperationsPlaceholderPage";
+import SplCasesPage from "@features/spl/cases/pages/SplCasesPage";
+import SplCaseDetailPage from "@features/spl/cases/pages/SplCaseDetailPage";
+import SplAccountsPage from "@features/spl/accounts/pages/SplAccountsPage";
+import SplAccountDetailPage from "@features/spl/accounts/pages/SplAccountDetailPage";
+import SplProjectsPage from "@features/spl/projects/pages/SplProjectsPage";
+import SplProjectDetailPage from "@features/spl/projects/pages/SplProjectDetailPage";
+import SplSlaReportPage from "@features/spl/reports/pages/SplSlaReportPage";
+import SplCsReportPage from "@features/spl/reports/pages/SplCsReportPage";
+import SplTimelogsReportPage from "@features/spl/reports/pages/SplTimelogsReportPage";
+import SplTeamSchedulePage from "@features/spl/schedule/pages/SplTeamSchedulePage";
+import SplUserScanPage from "@features/spl/user-scan/pages/SplUserScanPage";
+import SplCustomerHealthDashboardPage from "@features/spl/customer-health/pages/SplCustomerHealthDashboardPage";
+import SplCustomerHealthDetailPage from "@features/spl/customer-health/pages/SplCustomerHealthDetailPage";
+import SplUsageMetricsPage from "@features/spl/usage-metrics/pages/SplUsageMetricsPage";
 import PerspectiveLanding from "@components/perspective-landing/PerspectiveLanding";
 import SriLankaRoute from "@components/route-guards/SriLankaRoute";
 import AdCampaignsAnalyticsPage from "@features/marketing-ops/ad-campaigns/pages/AdCampaignsAnalyticsPage";
@@ -505,6 +530,102 @@ export default function App() {
           {/* Finance perspective — skeleton "coming soon" tile; the actual
               claim apps are the me/claims routes above. */}
           <Route path="finance" element={<PerspectiveLanding />} />
+          {/* CSM entry point — shared by two audiences (see useCsmTeamGate):
+              Customer Success gets the CSM Portal routes below, ported from
+              cs-tools/apps/csm-portal (Cases is the first domain; see
+              docs/ported-apps/csm-cases.md). Sales/Solutions Architecture
+              gets the SupportPortalLite routes further down, ported from
+              digiops-cs/apps/support-portal-lite. Only the bare index has to
+              dispatch between the two (CsmOrSplLanding) — every other path
+              here is single-purpose, and CsmShell/SplShell each lock out the
+              wrong audience on their own, so path names can be reused
+              verbatim from each source app without colliding (see
+              docs/ported-apps/spl.md). */}
+          <Route path="csm" element={<CsmOrSplLanding />} />
+          <Route path="csm/cases" element={<CsmCaseListPage />} />
+          <Route path="csm/cases/new" element={<CsmCaseCreatePage />} />
+          <Route path="csm/cases/:caseId" element={<CsmCaseDetailPage />} />
+          {/* Operations — the rail group is ported 1:1 from cs-tools/apps/csm-portal's
+              own sidebar (see CSM_SECTIONS in constants/perspectives.ts); none of
+              these five domains has a real page yet, so each routes to the same
+              shared placeholder. */}
+          <Route
+            path="csm/operations/service-requests"
+            element={
+              <CsmOperationsPlaceholderPage
+                domainLabel="Service requests"
+                icon={ClipboardListIcon}
+              />
+            }
+          />
+          <Route
+            path="csm/operations/change-requests"
+            element={
+              <CsmOperationsPlaceholderPage
+                domainLabel="Change requests"
+                icon={GitPullRequestIcon}
+              />
+            }
+          />
+          {/* Incidents lands on the same page as Cases (CsmCaseListPage), not a
+              placeholder — the two nav entries are deliberately the same
+              destination for now. */}
+          <Route path="csm/operations/incidents" element={<CsmCaseListPage />} />
+          <Route
+            path="csm/operations/problem-management"
+            element={
+              <CsmOperationsPlaceholderPage
+                domainLabel="Problem management"
+                icon={AlertOctagonIcon}
+              />
+            }
+          />
+          <Route
+            path="csm/operations/outages"
+            element={
+              <CsmOperationsPlaceholderPage
+                domainLabel="Outages"
+                icon={MegaphoneIcon}
+              />
+            }
+          />
+          {/* SupportPortalLite — ported from digiops-cs/apps/support-portal-lite.
+              Route leaves reused verbatim from the source app's own AppRoutes.tsx
+              (minus its /support prefix), except "cases" -> "support-cases" to
+              avoid colliding with the CSM routes above (see the block comment
+              at the top of this section). See docs/ported-apps/spl.md. */}
+          <Route path="csm/support-cases" element={<SplCasesPage />} />
+          <Route path="csm/support-cases/:caseId" element={<SplCaseDetailPage />} />
+          <Route path="csm/all-accounts" element={<SplAccountsPage />} />
+          <Route path="csm/my-accounts" element={<SplAccountsPage />} />
+          <Route path="csm/accounts/:accountId" element={<SplAccountDetailPage />} />
+          <Route
+            path="csm/accounts/:accountId/projects/:projectId"
+            element={<SplProjectDetailPage />}
+          />
+          <Route path="csm/projects" element={<SplProjectsPage />} />
+          <Route path="csm/projects/:projectId" element={<SplProjectDetailPage />} />
+          <Route
+            path="csm/projects/:projectId/sla-report/:sysId"
+            element={<SplSlaReportPage />}
+          />
+          <Route
+            path="csm/projects/:projectId/cs-report/:sysId"
+            element={<SplCsReportPage />}
+          />
+          <Route
+            path="csm/projects/:projectId/timelogs-report"
+            element={<SplTimelogsReportPage />}
+          />
+          <Route path="csm/team-schedule" element={<SplTeamSchedulePage />} />
+          <Route path="csm/team-schedule/:sysId" element={<SplTeamSchedulePage />} />
+          <Route path="csm/user-scan" element={<SplUserScanPage />} />
+          <Route path="csm/customer-health" element={<SplCustomerHealthDashboardPage />} />
+          <Route
+            path="csm/customer-health/account/:accountId"
+            element={<SplCustomerHealthDetailPage />}
+          />
+          <Route path="csm/usage-metrics" element={<SplUsageMetricsPage />} />
           {/* Finance → Claim approval. Approving is work you do for other
               people, so it sits here rather than under Me with the things you
               do for yourself; submitting and history stay there. Each tab is a

@@ -19,11 +19,12 @@ import { Box, Link, Sidebar, Typography } from "@wso2/oxygen-ui";
 import { ExternalLinkIcon, SettingsIcon } from "@wso2/oxygen-ui-icons-react";
 import { Link as RouterLink, matchPath, useLocation, useNavigate } from "react-router";
 import { useActivePerspective } from "@context/perspective/PerspectiveContext";
-import type { PerspectiveSection } from "@constants/perspectives";
+import { SPL_SECTIONS, type PerspectiveSection } from "@constants/perspectives";
 import {
   activeGroupIds as activeGroupIdsFor,
   activeItemId as activeItemIdFor,
 } from "./railActive";
+import { useCsmTeamGate } from "@features/csm/api/useCsmTeamGate";
 import { usePerspectiveVisibility } from "./usePerspectiveVisibility";
 
 // Context-sensitive left rail, built on Oxygen's compound `Sidebar`.
@@ -98,9 +99,25 @@ export default function SideRail({ collapsed }: SideRailProps): JSX.Element {
   // same answer and why a second copy of it would drift.
   const { resolveVisible } = usePerspectiveVisibility();
 
+  // CSM is a shared entry point (see useCsmTeamGate) — Customer Success gets
+  // CSM_SECTIONS (the `csm` perspective's static `sections` default),
+  // Sales/Solutions Architecture gets SPL_SECTIONS. Which section list is
+  // right depends on a role resolved at render time, not on anything baked
+  // into the static PERSPECTIVES array, so this stays local to the rail
+  // rather than folded into usePerspectiveVisibility: that hook answers
+  // "which items of THIS perspective's sections are visible", not "which
+  // section list is this perspective's". CsmOrSplLanding makes the same
+  // choice for the bare /csm route, independently — see its own comment for
+  // why a shared hook there would be the wrong fix, not this one.
+  const isCsm = active.key === "csm";
+  const csmTeamGate = useCsmTeamGate(isCsm);
+
   // Memoised because `?? []` would otherwise hand a fresh array to the
   // dependency lists below on every render, defeating both useMemos.
-  const sections = useMemo(() => active.sections ?? [], [active.sections]);
+  const sections = useMemo(() => {
+    if (isCsm && csmTeamGate.team === "salesOrSa") return SPL_SECTIONS;
+    return active.sections ?? [];
+  }, [active.sections, isCsm, csmTeamGate.team]);
 
   // Manual open/close choices for groups the user has explicitly clicked.
   // These win: navigating into a group opens it, and closing it again is

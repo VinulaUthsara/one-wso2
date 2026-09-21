@@ -130,11 +130,45 @@ declare global {
       // Asgardeo. Ignored in production builds (see devBypassAuth below),
       // so a stray true in a prod config.js can't disable auth.
       ONE_WSO2_DEV_BYPASS_AUTH?: boolean;
+      // Dev-only companion to the bypass above: AuthGuard skips signing in,
+      // but every Asgardeo-groups-based gate (useAsgardeoGroups — the
+      // subscription admin gate, useCsmTeamGate, useSplPermissions, ...)
+      // still waits on a real id_token that bypass mode never produces, so
+      // without this they spin on "checking your access" forever. When set
+      // AND the bundle is a Vite dev build, useAsgardeoGroups returns this
+      // list instead of decoding a token. Same "?: string[] falls off in
+      // prod" contract as ONE_WSO2_DEV_BYPASS_AUTH — see devBypassGroups.
+      ONE_WSO2_DEV_BYPASS_GROUPS?: string[];
       // Features built but not yet released — see @config/previewFeatures.
       // Absent or false hides the feature, so a deployment that says nothing
       // shows nothing. Typed loosely here and narrowed by `PreviewFeature` at
       // the read, so this declaration does not have to be edited for each flag.
       ONE_WSO2_PREVIEW_FEATURES?: Record<string, boolean | undefined>;
+      // Base URL for the CSM Portal backend (wso2-open-operations/cs-tools/
+      // apps/csm-portal) — the Customer Success half of the shared CSM entry
+      // point. Optional — when absent, CsmShell falls back to mock data.
+      ONE_WSO2_CSM_BACKEND_URL?: string;
+      // Asgardeo group names distinguishing the two audiences the shared CSM
+      // entry point serves — see useCsmTeamGate and csTeamGroups/
+      // salesTeamGroups in apiConfig.ts. Optional; empty/absent means nobody
+      // resolves to that team.
+      ONE_WSO2_CS_TEAM_GROUPS?: string[];
+      ONE_WSO2_SALES_TEAM_GROUPS?: string[];
+      // Base URL for the SupportPortalLite backend (digiops-cs/apps/
+      // support-portal-lite) — the Sales/Solutions Architecture half of the
+      // shared CSM entry point. Optional — when absent, features/spl's hooks
+      // fall back to mock data (see splMockApi.ts).
+      ONE_WSO2_SPL_BACKEND_URL?: string;
+      // Fine-grained SupportPortalLite permission groups, ported verbatim
+      // from the source app's own Authorize.tsx — independent of the
+      // CS-vs-Sales/SA split above: these gate what a Sales/SA caller may DO
+      // inside the ported screens (add a work note, escalate, download an
+      // attachment, view usage metrics), not whether they see them. Optional;
+      // empty/absent means nobody in that group.
+      ONE_WSO2_SPL_ADD_WORKNOTE_GROUPS?: string[];
+      ONE_WSO2_SPL_ADD_ESCALATION_GROUPS?: string[];
+      ONE_WSO2_SPL_DOWNLOAD_ATTACHMENT_GROUPS?: string[];
+      ONE_WSO2_SPL_USAGE_METRICS_GROUPS?: string[];
     };
   }
 }
@@ -146,6 +180,13 @@ declare global {
 // in shipped code even if an operator accidentally sets it to true.
 export const devBypassAuth =
   import.meta.env.DEV && window.config?.ONE_WSO2_DEV_BYPASS_AUTH === true;
+
+// Same dead-code-elimination contract as devBypassAuth above: folds to `[]`
+// in a production build regardless of what config.js says.
+export const devBypassGroups: string[] =
+  import.meta.env.DEV && Array.isArray(window.config?.ONE_WSO2_DEV_BYPASS_GROUPS)
+    ? window.config.ONE_WSO2_DEV_BYPASS_GROUPS
+    : [];
 
 function readConfig(key: keyof Window["config"], fallback = ""): string {
   const value = window.config?.[key];
